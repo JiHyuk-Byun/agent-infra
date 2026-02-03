@@ -24,44 +24,9 @@
 
 **Agent Infra** is a production-ready infrastructure for serving LLM backends to multi-turn AI agents. It handles the complexity of GPU cluster management, load balancing, and real-time monitoring so you can focus on building your agent.
 
-```mermaid
-flowchart LR
-    subgraph Agents["🤖 Agent Clients"]
-        A1[Agent 1]
-        A2[Agent 2]
-        A3[Agent N]
-    end
-
-    subgraph Infra["⚡ Agent Infra"]
-        direction TB
-        Proxy["🔀 Load Balancer<br/><small>4 strategies</small>"]
-        Tracker["📊 Session Tracker<br/><small>timing & metrics</small>"]
-        Proxy --> Tracker
-    end
-
-    subgraph Cluster["🖥️ GPU Cluster"]
-        direction TB
-        subgraph SLURM["SLURM / SSH Tunnel"]
-            G1["vLLM :5900"]
-            G2["vLLM :5910"]
-            G3["vLLM :5920"]
-        end
-    end
-
-    subgraph Monitor["📈 Monitoring"]
-        Dashboard["TUI Dashboard<br/><small>real-time metrics</small>"]
-    end
-
-    A1 & A2 & A3 --> Proxy
-    Proxy --> G1 & G2 & G3
-    Tracker -.-> Dashboard
-    G1 & G2 & G3 -.-> Dashboard
-
-    style Infra fill:#1a1a2e,stroke:#16213e,color:#fff
-    style Cluster fill:#0f3460,stroke:#16213e,color:#fff
-    style Agents fill:#533483,stroke:#16213e,color:#fff
-    style Monitor fill:#e94560,stroke:#16213e,color:#fff
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture" width="800">
+</p>
 
 ## Features
 
