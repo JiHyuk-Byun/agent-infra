@@ -1,0 +1,63 @@
+# Agent Infra Configuration Example
+# Copy this file and customize for your environment
+
+version: "1.0"
+
+# Load-balancing proxy settings
+proxy:
+  port: 5800
+  strategy: least_load  # Options: round_robin, least_connections, least_latency, least_load
+  health_check_interval: 30
+  request_timeout: 300
+
+# Cluster configuration
+cluster:
+  type: slurm  # Options: slurm, local
+
+  # SLURM-specific settings
+  slurm:
+    partitions:
+      # List partitions in priority order (preferred first)
+      # The allocator fills preferred partitions before moving to next
+
+      # Tier 1: Best GPUs
+      - name: gpu_a100
+        qos: default
+        gpus_per_node: 4
+        priority: 1
+
+      # Tier 2: Good GPUs
+      - name: gpu_a6000
+        qos: default
+        gpus_per_node: 4
+        priority: 2
+
+      # Tier 3: Fallback
+      - name: gpu_rtx3090
+        qos: default
+        gpus_per_node: 4
+        priority: 3
+
+# Model configurations
+models:
+  - name: my_model
+    model_path: "organization/model-name-7B"
+    base_port: 5900
+    replicas: 2
+    gpu_memory_utilization: 0.85
+    trust_remote_code: false
+
+  # Add more models as needed:
+  # - name: another_model
+  #   model_path: "org/another-model"
+  #   base_port: 5910
+  #   replicas: 1
+
+# Header names for request tracking
+# Customize these if your project uses different header conventions
+headers:
+  session: X-Session-ID
+  task: X-Task-ID
+  client: X-Client-ID
+  timing_pre: X-Timing-Pre-Ms
+  timing_post: X-Timing-Post-Ms

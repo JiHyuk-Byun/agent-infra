@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-infra"
+version = "0.1.0"
+description = "GPU serving infrastructure for multi-turn LLM agents"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Agent Infra Contributors" }
+]
+keywords = ["llm", "gpu", "vllm", "load-balancing", "infrastructure"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "aiohttp>=3.9.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "tyro>=0.7.0",
+]
+
+[project.optional-dependencies]
+uvloop = ["uvloop>=0.19.0"]
+vllm = ["torch"]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+agent-infra = "agent_infra.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/agent-infra/agent-infra"
+Documentation = "https://github.com/agent-infra/agent-infra#readme"
+Repository = "https://github.com/agent-infra/agent-infra"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent_infra"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
