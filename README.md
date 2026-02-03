@@ -1,39 +1,90 @@
-# Agent Infra
+<p align="center">
+  <h1 align="center">Agent Infra</h1>
+  <p align="center">
+    <strong>GPU Serving Infrastructure for Multi-turn LLM Agents</strong>
+  </p>
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#quickstart">Quickstart</a> •
+    <a href="#dashboard">Dashboard</a> •
+    <a href="#configuration">Configuration</a>
+  </p>
+</p>
 
-Multi-turn LLM agent infrastructure for GPU serving. SLURM cluster integration, load-balancing proxy, and real-time TUI dashboard.
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/rust-1.70+-orange.svg" alt="Rust 1.70+">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License">
+</p>
+
+---
+
+## Overview
+
+**Agent Infra** is a production-ready infrastructure for serving LLM backends to multi-turn AI agents. It handles the complexity of GPU cluster management, load balancing, and real-time monitoring so you can focus on building your agent.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Agent Infra                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────┐      ┌──────────────┐      ┌─────────────────────────────┐   │
+│   │  Agent  │─────▶│    Proxy     │─────▶│        GPU Cluster          │   │
+│   │ Client  │      │ (Load Bal.)  │      │  ┌─────┐ ┌─────┐ ┌─────┐   │   │
+│   └─────────┘      └──────────────┘      │  │vLLM │ │vLLM │ │vLLM │   │   │
+│        │                  │              │  └─────┘ └─────┘ └─────┘   │   │
+│        │           ┌──────────────┐      └─────────────────────────────┘   │
+│        └──────────▶│  Dashboard   │◀────────────────────┘                  │
+│                    │    (TUI)     │                                         │
+│                    └──────────────┘                                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Features
 
-- **Load-Balancing Proxy**: 4 strategies (least_load, round_robin, least_connections, least_latency)
-- **SLURM Integration**: GPU partition auto-allocation, job management
-- **SSH Tunnels**: Automatic remote GPU node connections
-- **Real-time Dashboard**: Rust TUI for pipeline monitoring
-- **Session Tracking**: Per-request timing, bottleneck analysis
+| Feature | Description |
+|---------|-------------|
+| **Load Balancing** | 4 strategies: `least_load`, `round_robin`, `least_connections`, `least_latency` |
+| **SLURM Integration** | Automatic GPU allocation, job submission, and lifecycle management |
+| **SSH Tunneling** | Seamless connectivity to remote GPU nodes |
+| **Session Tracking** | Per-request timing, turn-level metrics, bottleneck analysis |
+| **Real-time Dashboard** | Rust TUI for monitoring GPU utilization, queue status, and pipeline health |
+| **Configurable Headers** | Customizable header names for different agent frameworks |
 
 ## Installation
 
-```bash
-# From source
-git clone https://github.com/your-org/agent-infra.git
-cd agent-infra
-pip install -e .
+### Python Package
 
-# Dashboard (optional)
+```bash
+# Clone the repository
+git clone https://github.com/JiHyuk-Byun/agent-infra.git
+cd agent-infra
+
+# Install the package
+pip install -e .
+```
+
+### Dashboard (Optional)
+
+```bash
 cd dashboard
 cargo build --release
+
+# Binary will be at ./target/release/dashboard
 ```
 
 ## Quickstart
 
-### Step 1: Configuration
+### 1. Create Configuration
 
 ```bash
-cp configs/example.yaml my-config.yaml
+cp configs/example.yaml config.yaml
 ```
 
-Edit `my-config.yaml`:
-
 ```yaml
+# config.yaml
 proxy:
   port: 5800
   strategy: least_load
@@ -42,41 +93,36 @@ cluster:
   type: slurm
   slurm:
     partitions:
-      - name: your_gpu_partition
-        qos: your_qos
+      - name: gpu_partition
+        qos: default
         gpus_per_node: 4
-        priority: 1
 
 models:
   - name: my_model
-    model_path: "org/model-name"
+    model_path: "meta-llama/Llama-3.1-8B-Instruct"
     base_port: 5900
     replicas: 2
     gpu_memory_utilization: 0.85
-
-headers:
-  session: X-Session-ID
-  task: X-Task-ID
 ```
 
-### Step 2: Start GPU Servers (SLURM)
+### 2. Launch GPU Servers
 
 ```bash
 # Submit vLLM jobs to SLURM
-agent-infra start --config my-config.yaml
+agent-infra start --config config.yaml
 
 # Check status
 agent-infra status
 ```
 
-### Step 3: Connect Proxy
+### 3. Start Proxy
 
 ```bash
-# Create SSH tunnels + start proxy
-agent-infra connect --config my-config.yaml
+# Create SSH tunnels and start load-balancing proxy
+agent-infra connect --config config.yaml
 ```
 
-### Step 4: Use in Agent
+### 4. Use in Your Agent
 
 ```python
 from agent_infra.client import SessionContext
@@ -88,9 +134,9 @@ client = OpenAI(
     api_key="not-needed",
 )
 
-# Create session context
+# Create session context for tracking
 ctx = SessionContext(
-    session_id="my-session-001",
+    session_id="session-001",
     task_id="task-summarize",
 )
 
@@ -98,140 +144,146 @@ ctx = SessionContext(
 messages = [{"role": "user", "content": "Hello!"}]
 
 for turn in range(10):
-    # Optional: track agent timing
-    ctx.set_timing(pre_ms=150.0)  # observation build time
+    ctx.set_timing(pre_ms=150.0)  # Track observation build time
 
     response = client.chat.completions.create(
         model="my_model",
         messages=messages,
-        extra_headers=ctx.get_headers(),  # session tracking headers
+        extra_headers=ctx.get_headers(),
     )
 
-    messages.append({"role": "assistant", "content": response.choices[0].message.content})
-    messages.append({"role": "user", "content": "Tell me more."})
+    messages.append({
+        "role": "assistant",
+        "content": response.choices[0].message.content
+    })
+    messages.append({"role": "user", "content": "Continue."})
 
-    ctx.set_timing(post_ms=200.0)  # action execution time
+    ctx.set_timing(post_ms=200.0)  # Track action execution time
 ```
 
-### Step 5: Monitor with Dashboard
+### 5. Monitor with Dashboard
 
 ```bash
-cd dashboard
-cargo run --release -- --proxy http://localhost:5800
+./dashboard/target/release/dashboard --proxy http://localhost:5800
 ```
 
-### Step 6: Stop
+### 6. Cleanup
 
 ```bash
-# Stop proxy (Ctrl+C)
-# Cancel SLURM jobs
-agent-infra stop --config my-config.yaml
+agent-infra stop --config config.yaml
 ```
 
-## CLI Reference
+## Dashboard
 
-```bash
-# Full pipeline
-agent-infra start --config config.yaml    # Submit GPU jobs
-agent-infra connect --config config.yaml  # SSH tunnels + proxy
-agent-infra status                        # Check job status
-agent-infra stop --config config.yaml     # Cancel all jobs
+The real-time TUI dashboard provides comprehensive visibility into your GPU serving infrastructure.
 
-# Individual components
-agent-infra proxy --port 5800             # Proxy only
+```
+┌─ Agent Infra Dashboard ─────────────────────────────────────────────────────┐
+│ Proxy: http://localhost:5800  CONNECTED  │ LB: least_load │ Uptime: 02:15:30│
+├─────────────────────────────────────────────────────────────────────────────┤
+│ GPU Backends (1 models, 4 backends)                                         │
+│ ┌──────────────┬──────────┬───────────┬──────────┬─────────┬───────────────┐│
+│ │Model/Backend │ Status   │ GPU Load  │ Inflight │ Requests│ Avg Latency   ││
+│ ├──────────────┼──────────┼───────────┼──────────┼─────────┼───────────────┤│
+│ │▾ my_model    │ 4/4      │    12     │     3    │   1,247 │               ││
+│ │  :5900       │ healthy  │     3     │     1    │     312 │ 2.3s          ││
+│ │  :5910       │ healthy  │     3     │     1    │     315 │ 2.1s          ││
+│ │  :5920       │ healthy  │     3     │     0    │     308 │ 2.4s          ││
+│ │  :5930       │ healthy  │     3     │     1    │     312 │ 2.2s          ││
+│ └──────────────┴──────────┴───────────┴──────────┴─────────┴───────────────┘│
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Bottleneck Analysis                                                         │
+│   Sessions:  8 active                                                       │
+│   GPUs:      4 healthy / 4 total                                            │
+│   Pipeline:  agent=450ms  inference=2.1s  proxy=15ms  wait=5ms              │
+│   Diagnosis: BALANCED                                                       │
+│   → System running smoothly. Load well distributed.                         │
+│   Suggested: --num-parallel 8  (2.0/gpu × 4 gpus)                          │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Configuration Reference
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Tab` | Switch between panels |
+| `↑/k` | Navigate up |
+| `↓/j` | Navigate down |
+| `Enter` | Expand/collapse item |
+| `q/Esc` | Quit |
+
+## Configuration
 
 ### Proxy Settings
 
 ```yaml
 proxy:
-  port: 5800                    # Proxy listen port
-  strategy: least_load          # round_robin | least_connections | least_latency | least_load
-  health_check_interval: 30     # Backend health check interval (seconds)
+  port: 5800                    # Listen port
+  strategy: least_load          # Load balancing strategy
+  health_check_interval: 30     # Health check interval (seconds)
   request_timeout: 300          # Request timeout (seconds)
 ```
+
+**Available Strategies:**
+- `least_load` - Route to backend with lowest GPU load
+- `round_robin` - Distribute requests evenly
+- `least_connections` - Route to backend with fewest active connections
+- `least_latency` - Route to fastest responding backend
 
 ### Cluster Settings
 
 ```yaml
 cluster:
-  type: slurm                   # slurm | local
+  type: slurm                   # Cluster type: slurm | local
   slurm:
     partitions:
       - name: gpu_partition     # SLURM partition name
-        qos: default            # QOS
-        gpus_per_node: 4        # GPUs per node
-        priority: 1             # Selection priority
+        qos: default            # Quality of Service
+        gpus_per_node: 4        # GPUs available per node
+        priority: 1             # Selection priority (higher = preferred)
 ```
 
 ### Model Settings
 
 ```yaml
 models:
-  - name: my_model              # Model name for routing
+  - name: my_model              # Model name for API routing
     model_path: org/model-name  # HuggingFace model path
-    base_port: 5900             # Starting port number
-    replicas: 2                 # Number of replicas
+    base_port: 5900             # Starting port for replicas
+    replicas: 2                 # Number of model replicas
     gpu_memory_utilization: 0.85
-    tensor_parallel_size: 1     # GPUs per replica
+    tensor_parallel_size: 1     # GPUs per replica (for large models)
 ```
 
-### Header Settings
+### Header Customization
 
 ```yaml
 headers:
-  session: X-Session-ID        # Session ID header
-  task: X-Task-ID              # Task ID header
-  client: X-Client-ID          # Client ID header
-  timing_pre: X-Timing-Pre-Ms  # Pre-request timing
-  timing_post: X-Timing-Post-Ms # Post-request timing
+  session: X-Session-ID         # Session identifier header
+  task: X-Task-ID               # Task identifier header
+  client: X-Client-ID           # Client identifier header
+  timing_pre: X-Timing-Pre-Ms   # Pre-request timing header
+  timing_post: X-Timing-Post-Ms # Post-request timing header
 ```
 
-## Dashboard
-
-Real-time TUI dashboard showing:
-
-- GPU backend health and load
-- Request queue status
-- Session/turn tracking
-- Bottleneck analysis
+## CLI Reference
 
 ```bash
-cd dashboard
-cargo run --release -- \
-  --proxy http://localhost:5800 \
-  --theme dark \
-  --interval 2
-```
+# Full pipeline management
+agent-infra start   --config config.yaml   # Submit GPU jobs to SLURM
+agent-infra connect --config config.yaml   # Start tunnels + proxy
+agent-infra status                         # Check job status
+agent-infra stop    --config config.yaml   # Cancel all jobs
 
-### Dashboard Controls
-
-| Key | Action |
-|-----|--------|
-| Tab | Switch panels |
-| j/k or arrows | Navigate |
-| Enter | Expand/collapse |
-| q/Esc | Quit |
-
-## Architecture
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   Agent     │────▶│    Proxy     │────▶│  GPU Pool   │
-│  (Client)   │     │ (Load Bal.)  │     │  (vLLM)     │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │                   │                    │
-       │           ┌──────────────┐            │
-       └──────────▶│  Dashboard   │◀───────────┘
-                   │   (TUI)      │
-                   └──────────────┘
+# Individual components
+agent-infra proxy --port 5800              # Run proxy only
 ```
 
 ## Python API
 
 ### SessionContext
+
+Helper class for tracking sessions in your agent:
 
 ```python
 from agent_infra.client import SessionContext
@@ -239,11 +291,11 @@ from agent_infra.client import SessionContext
 ctx = SessionContext(
     session_id="session-123",
     task_id="task-456",
-    headers_config={...}  # Optional: custom header names
 )
 
-# Set timing for bottleneck analysis
-ctx.set_timing(pre_ms=100.0, post_ms=200.0)
+# Track timing for bottleneck analysis
+ctx.set_timing(pre_ms=100.0)   # Before LLM call
+ctx.set_timing(post_ms=200.0)  # After action execution
 
 # Get headers for OpenAI client
 headers = ctx.get_headers()
@@ -251,41 +303,37 @@ headers = ctx.get_headers()
 
 ### ConnectionManager
 
+Programmatic control of the full pipeline:
+
 ```python
 from agent_infra import load_config, ConnectionManager
 
 config = load_config("config.yaml")
 manager = ConnectionManager(config)
 
-# Start GPU jobs + proxy
-await manager.start()
-await manager.connect()
-
-# Stop
-await manager.stop()
+await manager.start()    # Submit GPU jobs
+await manager.connect()  # Start tunnels + proxy
+await manager.stop()     # Cleanup
 ```
 
-### LoadBalancingProxy
+## Project Structure
 
-```python
-from agent_infra.proxy import LoadBalancingProxy
-
-proxy = LoadBalancingProxy(config)
-await proxy.start()
 ```
-
-## Development
-
-```bash
-# Python tests
-pytest tests/
-
-# Rust dashboard
-cd dashboard
-cargo test
-cargo clippy
+agent-infra/
+├── agent_infra/           # Python package
+│   ├── proxy/             # Load-balancing proxy
+│   ├── cluster/           # SLURM/local cluster providers
+│   ├── tunnel/            # SSH tunnel management
+│   ├── server/            # vLLM server launcher
+│   ├── config/            # Configuration schemas
+│   ├── orchestrator/      # Pipeline orchestration
+│   └── client/            # Agent helper utilities
+├── dashboard/             # Rust TUI dashboard
+│   └── src/
+├── examples/              # Usage examples
+└── configs/               # Example configurations
 ```
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
