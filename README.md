@@ -35,6 +35,7 @@
 | **End-to-End Pipeline Tracking** | Tracks the entire agent loop: observation → queue → inference → action |
 | **Bottleneck Diagnosis** | Identifies GPU-bound vs Agent-bound, suggests optimal `--num-parallel` |
 | **GPU-aware Load Balancing** | Routes to the least loaded GPU with automatic failover |
+| **Elastic Scaling** | Add GPUs on-the-fly as SLURM resources become available |
 | **One-command Infrastructure** | `start` → `connect` → `stop` handles SLURM, SSH tunnels, and proxy |
 | **Real-time TUI Dashboard** | Monitor GPU load, queue depth, sessions, and pipeline timing |
 
