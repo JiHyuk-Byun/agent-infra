@@ -30,15 +30,13 @@
 
 ## Features
 
-- **End-to-End Pipeline Tracking** — Not just inference time, but the entire agent loop: observation build → queue wait → inference → action execution
-
-- **Bottleneck Diagnosis** — Automatically identifies if you're GPU-bound or Agent-bound, and suggests optimal `--num-parallel`
-
-- **GPU-aware Load Balancing** — Routes to the least loaded GPU, not just round-robin. Auto failover on backend failures
-
-- **One-command Infrastructure** — `agent-infra start` submits SLURM jobs, creates SSH tunnels, and launches the proxy
-
-- **Real-time TUI Dashboard** — Monitor GPU load, queue depth, per-session turns, and pipeline timing at a glance
+| Feature | Description |
+|---------|-------------|
+| **End-to-End Pipeline Tracking** | Tracks the entire agent loop: observation → queue → inference → action |
+| **Bottleneck Diagnosis** | Identifies GPU-bound vs Agent-bound, suggests optimal `--num-parallel` |
+| **GPU-aware Load Balancing** | Routes to the least loaded GPU with automatic failover |
+| **One-command Infrastructure** | `start` → `connect` → `stop` handles SLURM, SSH tunnels, and proxy |
+| **Real-time TUI Dashboard** | Monitor GPU load, queue depth, sessions, and pipeline timing |
 
 ## Installation
 
