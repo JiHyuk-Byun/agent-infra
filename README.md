@@ -28,16 +28,36 @@
   <img src="docs/architecture.svg" alt="Architecture" width="800">
 </p>
 
-## Features
+## Why Agent Infra?
 
-| Feature | Description |
-|---------|-------------|
-| **Load Balancing** | 4 strategies: `least_load`, `round_robin`, `least_connections`, `least_latency` |
-| **SLURM Integration** | Automatic GPU allocation, job submission, and lifecycle management |
-| **SSH Tunneling** | Seamless connectivity to remote GPU nodes |
-| **Session Tracking** | Per-request timing, turn-level metrics, bottleneck analysis |
-| **Real-time Dashboard** | Rust TUI for monitoring GPU utilization, queue status, and pipeline health |
-| **Configurable Headers** | Customizable header names for different agent frameworks |
+### 🔍 "Why is my agent slow?"
+
+Agent Infra tracks the **entire pipeline**, not just inference:
+
+```
+Agent builds observation → Waits in queue → GPU inference → Agent executes action
+        150ms                   5ms            2.1s              200ms
+```
+
+The dashboard tells you exactly where the bottleneck is — **GPU-bound** or **Agent-bound** — and suggests the optimal parallelism.
+
+### ⚡ Smart Load Balancing
+
+Route requests based on **actual GPU load**, not just round-robin:
+
+- Backends report real-time GPU utilization
+- Requests go to the least loaded GPU
+- Automatic failover when backends go down
+
+### 🖥️ One Command to Production
+
+No more manual SSH tunnels or job scripts:
+
+```bash
+agent-infra start    # Submit GPU jobs to SLURM
+agent-infra connect  # Auto SSH tunnels + proxy
+agent-infra stop     # Clean up everything
+```
 
 ## Installation
 
