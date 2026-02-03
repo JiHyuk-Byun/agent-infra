@@ -21,7 +21,8 @@
     </filter>
   </defs>
 
-  <!-- Background (transparent) -->
+  <!-- Background -->
+  <rect width="900" height="320" rx="16" fill="#ffffff"/>
 
   <!-- Agent Clients Box -->
   <g filter="url(#shadow)">
