@@ -28,36 +28,17 @@
   <img src="docs/architecture.svg" alt="Architecture" width="800">
 </p>
 
-## Why Agent Infra?
+## Features
 
-### 🔍 "Why is my agent slow?"
+- **End-to-End Pipeline Tracking** — Not just inference time, but the entire agent loop: observation build → queue wait → inference → action execution
 
-Agent Infra tracks the **entire pipeline**, not just inference:
+- **Bottleneck Diagnosis** — Automatically identifies if you're GPU-bound or Agent-bound, and suggests optimal `--num-parallel`
 
-```
-Agent builds observation → Waits in queue → GPU inference → Agent executes action
-        150ms                   5ms            2.1s              200ms
-```
+- **GPU-aware Load Balancing** — Routes to the least loaded GPU, not just round-robin. Auto failover on backend failures
 
-The dashboard tells you exactly where the bottleneck is — **GPU-bound** or **Agent-bound** — and suggests the optimal parallelism.
+- **One-command Infrastructure** — `agent-infra start` submits SLURM jobs, creates SSH tunnels, and launches the proxy
 
-### ⚡ Smart Load Balancing
-
-Route requests based on **actual GPU load**, not just round-robin:
-
-- Backends report real-time GPU utilization
-- Requests go to the least loaded GPU
-- Automatic failover when backends go down
-
-### 🖥️ One Command to Production
-
-No more manual SSH tunnels or job scripts:
-
-```bash
-agent-infra start    # Submit GPU jobs to SLURM
-agent-infra connect  # Auto SSH tunnels + proxy
-agent-infra stop     # Clean up everything
-```
+- **Real-time TUI Dashboard** — Monitor GPU load, queue depth, per-session turns, and pipeline timing at a glance
 
 ## Installation
 
